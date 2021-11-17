@@ -1,6 +1,7 @@
 'use strict';
 
 const port = 8010;
+const logger = require('./src/util/logger');
 const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database(':memory:');
 
@@ -12,5 +13,5 @@ db.serialize(() => {
 
     const server = app(db);
 
-    server.listen(port, () => console.log(`App started and listening on port ${port}`));
+    server.listen(port, () => logger.info(`App started and listening on port ${port}`));
 });
