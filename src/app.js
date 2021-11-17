@@ -54,8 +54,8 @@ module.exports = (db) => {
         }
 
         var values = [req.body.start_lat, req.body.start_long, req.body.end_lat, req.body.end_long, req.body.rider_name, req.body.driver_name, req.body.driver_vehicle];
-        
-        const result = db.run('INSERT INTO Rides(startLat, startLong, endLat, endLong, riderName, driverName, driverVehicle) VALUES (?, ?, ?, ?, ?, ?, ?)', values, function (err) {
+
+        return db.run('INSERT INTO Rides(startLat, startLong, endLat, endLong, riderName, driverName, driverVehicle) VALUES (?, ?, ?, ?, ?, ?, ?)', values, function (err) {
             if (err) {
                 return res.send({
                     error_code: 'SERVER_ERROR',
@@ -63,7 +63,7 @@ module.exports = (db) => {
                 });
             }
 
-            db.all('SELECT * FROM Rides WHERE rideID = ?', this.lastID, function (err, rows) {
+            return db.all('SELECT * FROM Rides WHERE rideID = ?', this.lastID, function (err, rows) {
                 if (err) {
                     return res.send({
                         error_code: 'SERVER_ERROR',
@@ -71,7 +71,7 @@ module.exports = (db) => {
                     });
                 }
 
-                res.send(rows);
+                return res.send(rows);
             });
         });
     });
@@ -92,7 +92,7 @@ module.exports = (db) => {
                 });
             }
 
-            res.send(rows);
+            return res.send(rows);
         });
     });
 
@@ -112,7 +112,7 @@ module.exports = (db) => {
                 });
             }
 
-            res.send(rows);
+            return res.send(rows);
         });
     });
 

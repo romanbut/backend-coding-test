@@ -17,7 +17,7 @@ describe('API tests', () => {
 
             buildSchemas(db);
 
-            done();
+            return done();
         });
     });
 
