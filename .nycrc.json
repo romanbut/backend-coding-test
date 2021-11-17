@@ -1,0 +1,7 @@
+{
+  "lines": 85,
+  "check-coverage": true,
+  "extension": [".js",".ts"],
+  "include": ["src/*"],
+  "reporter": ["html"]
+}

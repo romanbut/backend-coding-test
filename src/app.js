@@ -1,5 +1,5 @@
 'use strict';
-
+const logger = require('./util/logger');
 const express = require('express');
 const app = express();
 
@@ -54,24 +54,26 @@ module.exports = (db) => {
         }
 
         var values = [req.body.start_lat, req.body.start_long, req.body.end_lat, req.body.end_long, req.body.rider_name, req.body.driver_name, req.body.driver_vehicle];
-        
-        const result = db.run('INSERT INTO Rides(startLat, startLong, endLat, endLong, riderName, driverName, driverVehicle) VALUES (?, ?, ?, ?, ?, ?, ?)', values, function (err) {
+
+        return db.run('INSERT INTO Rides(startLat, startLong, endLat, endLong, riderName, driverName, driverVehicle) VALUES (?, ?, ?, ?, ?, ?, ?)', values, function (err) {
             if (err) {
+                logger.error(`Failed to insert data. Reason: ${err.message}`);
                 return res.send({
                     error_code: 'SERVER_ERROR',
                     message: 'Unknown error'
                 });
             }
-
-            db.all('SELECT * FROM Rides WHERE rideID = ?', this.lastID, function (err, rows) {
+            let {lastID}=this;
+            return db.all('SELECT * FROM Rides WHERE rideID = ?',lastID, function (err, rows) {
                 if (err) {
+                    logger.error(`Failed to fetch record with ID=[${lastID}]. Reason: ${err.message}`)
                     return res.send({
                         error_code: 'SERVER_ERROR',
                         message: 'Unknown error'
                     });
                 }
 
-                res.send(rows);
+                return res.send(rows);
             });
         });
     });
@@ -79,6 +81,7 @@ module.exports = (db) => {
     app.get('/rides', (req, res) => {
         db.all('SELECT * FROM Rides', function (err, rows) {
             if (err) {
+                logger.error(`Failed to load entities. Reason: ${err.message}`);
                 return res.send({
                     error_code: 'SERVER_ERROR',
                     message: 'Unknown error'
@@ -92,13 +95,15 @@ module.exports = (db) => {
                 });
             }
 
-            res.send(rows);
+            return res.send(rows);
         });
     });
 
     app.get('/rides/:id', (req, res) => {
-        db.all(`SELECT * FROM Rides WHERE rideID='${req.params.id}'`, function (err, rows) {
+        let {id} = req.params;
+        db.all(`SELECT *FROM Rides WHERE rideID='${id}'`, function (err, rows) {
             if (err) {
+                logger.error(`Failed to fetch entity by ID=[${id}]. Reason: ${err.message}`);
                 return res.send({
                     error_code: 'SERVER_ERROR',
                     message: 'Unknown error'
@@ -112,7 +117,7 @@ module.exports = (db) => {
                 });
             }
 
-            res.send(rows);
+            return res.send(rows);
         });
     });
 
