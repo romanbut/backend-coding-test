@@ -22,6 +22,9 @@ interface Ride {
 ## Endpoints
 
 - `GET`: `/rides` - fetches all existing entities from DB
+    - Params:
+      - `offset` _[optional,integer]_ - record to start page from; including; _Default value is 0_ 
+      - `limit` _[optional,integer]_ - size of the page; _Default value is 10_
 
     - Sample response (status code `200`):
    ```json
