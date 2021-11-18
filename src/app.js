@@ -89,13 +89,11 @@ module.exports = (db) => {
       }
       return res.send(rows);
     } catch (err) {
-      if (err) {
-        logger.error(`Failed to load entities. Reason: ${err.message}`);
-        return res.send({
-          error_code: 'SERVER_ERROR',
-          message: 'Unknown error',
-        });
-      }
+      logger.error(`Failed to load entities. Reason: ${err.message}`);
+      return res.send({
+        error_code: 'SERVER_ERROR',
+        message: 'Unknown error',
+      });
     }
   });
 
@@ -111,13 +109,11 @@ module.exports = (db) => {
       }
       return res.send(rows);
     } catch (err) {
-      if (err) {
-        logger.error(`Failed to fetch entity by ID=[${id}]. Reason: ${err.message}`);
-        return res.send({
-          error_code: 'SERVER_ERROR',
-          message: 'Unknown error',
-        });
-      }
+      logger.error(`Failed to fetch entity by ID=[${id}]. Reason: ${err.message}`);
+      return res.send({
+        error_code: 'SERVER_ERROR',
+        message: 'Unknown error',
+      });
     }
   });
 
