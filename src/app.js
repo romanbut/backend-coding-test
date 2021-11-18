@@ -12,7 +12,7 @@ const DEFAULT_LIMIT = 10;
 module.exports = (db) => {
   app.get('/health', (req, res) => res.send('Healthy'));
 
-  app.post('/rides', jsonParser, (req, res) => {
+  app.post('/rides', jsonParser, async (req, res) => {
     const startLatitude = Number(req.body.start_lat);
     const startLongitude = Number(req.body.start_long);
     const endLatitude = Number(req.body.end_lat);
@@ -58,37 +58,37 @@ module.exports = (db) => {
 
     const values = [req.body.start_lat, req.body.start_long, req.body.end_lat, req.body.end_long, req.body.rider_name, req.body.driver_name, req.body.driver_vehicle];
 
-    return db.run('INSERT INTO Rides(startLat, startLong, endLat, endLong, riderName, driverName, driverVehicle) VALUES (?, ?, ?, ?, ?, ?, ?)', values, function(err) {
-      if (err) {
-        logger.error(`Failed to insert data. Reason: ${err.message}`);
-        return res.send({
-          error_code: 'SERVER_ERROR',
-          message: 'Unknown error',
-        });
-      }
-      // disabling inspection for following line because it's the only way sqlite returns lastID
-      // eslint-disable-next-line no-invalid-this
-      const {lastID}=this;
-      return db.all('SELECT * FROM Rides WHERE rideID = ?', lastID, function(err, rows) {
-        if (err) {
-          logger.error(`Failed to fetch record with ID=[${lastID}]. Reason: ${err.message}`);
-          return res.send({
-            error_code: 'SERVER_ERROR',
-            message: 'Unknown error',
-          });
-        }
-
-        return res.send(rows);
+    try {
+      const result = await db.runAsync(
+          'INSERT INTO Rides(startLat, startLong, endLat, endLong, riderName, driverName, driverVehicle) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          values);
+      const rows = await db.allAsync('SELECT * FROM Rides WHERE rideID = ?',
+          result.lastID);
+      return res.send(rows);
+    } catch (err) {
+      logger.error(`Failed to insert data. Reason: ${err.message}`);
+      return res.send({
+        error_code: 'SERVER_ERROR',
+        message: 'Unknown error',
       });
-    });
+    }
   });
 
-  app.get('/rides', (req, res) => {
+  app.get('/rides', async (req, res) => {
     // if offset is missing from params, starting from the beginning
-    const offset = _.toInteger(req.query.offset)||0;
+    const offset = _.toInteger(req.query.offset) || 0;
     // if limit is missing (or invalid), falling back to default value
-    const limit = _.toInteger(req.query.limit)||DEFAULT_LIMIT;
-    db.all('SELECT * FROM Rides LIMIT ? OFFSET ?', [limit, offset], function(err, rows) {
+    const limit = _.toInteger(req.query.limit) || DEFAULT_LIMIT;
+    try {
+      const rows = await db.allAsync('SELECT * FROM Rides LIMIT ? OFFSET ?', [limit, offset]);
+      if (rows.length === 0) {
+        return res.send({
+          error_code: 'RIDES_NOT_FOUND_ERROR',
+          message: 'Could not find any rides',
+        });
+      }
+      return res.send(rows);
+    } catch (err) {
       if (err) {
         logger.error(`Failed to load entities. Reason: ${err.message}`);
         return res.send({
@@ -96,21 +96,21 @@ module.exports = (db) => {
           message: 'Unknown error',
         });
       }
+    }
+  });
 
+  app.get('/rides/:id', async (req, res) => {
+    const {id} = req.params;
+    try {
+      const rows = await db.allAsync('SELECT * FROM Rides WHERE rideID = ?', [id]);
       if (rows.length === 0) {
         return res.send({
           error_code: 'RIDES_NOT_FOUND_ERROR',
           message: 'Could not find any rides',
         });
       }
-
       return res.send(rows);
-    });
-  });
-
-  app.get('/rides/:id', (req, res) => {
-    const {id} = req.params;
-    db.all(`SELECT *FROM Rides WHERE rideID='${id}'`, function(err, rows) {
+    } catch (err) {
       if (err) {
         logger.error(`Failed to fetch entity by ID=[${id}]. Reason: ${err.message}`);
         return res.send({
@@ -118,16 +118,7 @@ module.exports = (db) => {
           message: 'Unknown error',
         });
       }
-
-      if (rows.length === 0) {
-        return res.send({
-          error_code: 'RIDES_NOT_FOUND_ERROR',
-          message: 'Could not find any rides',
-        });
-      }
-
-      return res.send(rows);
-    });
+    }
   });
 
   return app;
