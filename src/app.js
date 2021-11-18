@@ -1,10 +1,13 @@
 'use strict';
 const logger = require('./util/logger');
+const _ = require('lodash');
 const express = require('express');
 const app = express();
 
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
+
+const DEFAULT_LIMIT = 10;
 
 module.exports = (db) => {
   app.get('/health', (req, res) => res.send('Healthy'));
@@ -81,7 +84,11 @@ module.exports = (db) => {
   });
 
   app.get('/rides', (req, res) => {
-    db.all('SELECT * FROM Rides', function(err, rows) {
+    // if offset is missing from params, starting from the beginning
+    const offset = _.toInteger(req.query.offset)||0;
+    // if limit is missing (or invalid), falling back to default value
+    const limit = _.toInteger(req.query.limit)||DEFAULT_LIMIT;
+    db.all('SELECT * FROM Rides LIMIT ? OFFSET ?', [limit, offset], function(err, rows) {
       if (err) {
         logger.error(`Failed to load entities. Reason: ${err.message}`);
         return res.send({
