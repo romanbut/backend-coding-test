@@ -4,7 +4,7 @@ const request = require('supertest');
 const {assert} = require('chai');
 
 const db = require('../src/db/db');
-
+const ridesService = require('../src/services/rides');
 const app = require('../src/app');
 
 const TEST_DATA = {
@@ -30,6 +30,15 @@ const TEST_DATA = {
   'rides_empty_res': {
     'error_code': 'RIDES_NOT_FOUND_ERROR',
     'message': 'Could not find any rides',
+  },
+  'rides_sql_inj': {
+    'start_lat': 40,
+    'start_long': 50,
+    'end_lat': 40,
+    'end_long': 50,
+    'rider_name': ';DROP TABLE Rides;--',
+    'driver_name': '\';DROP TABLE Rides;--',
+    'driver_vehicle': '";DROP TABLE Rides;--',
   },
   'validation': [
     {
@@ -73,13 +82,26 @@ const TEST_DATA = {
       },
     },
   ],
+  'injection_ids': [
+    '\';DROP TABLE Rides;--',
+    '1\';DROP TABLE Rides;--',
+    '";DROP TABLE Rides;--',
+    '1";DROP TABLE Rides;--',
+    '`;DROP TABLE Rides;--',
+    '1`;DROP TABLE Rides;--',
+  ],
 };
 
 describe('API tests', () => {
   before((done) => {
     db.init().
-        then(()=>done()).
-        catch((err)=>done(err));
+        then(() => done()).
+        catch((err) => done(err));
+  });
+  after((done) => {
+    db.runAsync('DROP TABLE Rides;').
+        then(() => done()).
+        catch(done);
   });
 
   describe('GET /health', () => {
@@ -163,6 +185,44 @@ describe('API tests', () => {
             }).
             expect(400, done);
       });
+    });
+  });
+});
+
+describe('Security tests', () => {
+  before((done) => {
+    db.init().
+        then(() => ridesService.saveNew(TEST_DATA.new_ride)).
+        then(() => done()).
+        catch((err) => done(err));
+  });
+
+  describe('GET /rides injection test', () => {
+    TEST_DATA.injection_ids.forEach((injectionId) => {
+      it('should throw an error', (done) => {
+        request(app).
+            get(`/rides/${injectionId}`).
+            expect((res) => assert.include(res.body, TEST_DATA.rides_empty_res)).
+            expect(404, done);
+      });
+    });
+
+    it('Should check that DB still exists and contains data', (done) => {
+      ridesService.getAll(0, 10).then((records) => assert.equal(records.length, 1)).then(done);
+    });
+  });
+  describe('POST /rides', () => {
+    it('should save entity and return it', (done) => {
+      request(app).
+          post('/rides').
+          send(TEST_DATA.rides_sql_inj).
+          expect((res) => {
+            assert.include(res.body, {rideID: 2});
+          }).
+          expect(200, done);
+    });
+    it('Should check that DB still exists and contains data', (done) => {
+      ridesService.getAll(0, 10).then((records) => assert.equal(records.length, 2)).then(done);
     });
   });
 });
