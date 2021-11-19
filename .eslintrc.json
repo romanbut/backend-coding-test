@@ -20,6 +20,6 @@
   "rules": {
     "new-cap": "off",
     "consistent-return": "warn",
-    "max-len": "warn"
+    "max-len": [1,120]
   }
 }

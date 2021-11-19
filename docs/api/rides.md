@@ -49,13 +49,21 @@ interface Ride {
    }]
       
     ```
-   - Error response (status code `200`)
-   ```json
-   {
-    "error_code": "SERVER_ERROR",
-    "message": "Unknown server error"
-   }
-   ```
+   - Errors: 
+      - Server error (status code `500`)
+      ```json
+      {
+       "error_code": "SERVER_ERROR",
+       "message": "Unknown server error"
+      }
+      ```
+      - No data error (if no data exists within provided limits) (status code `404`)
+      ```json
+      {
+       "error_code": "RIDES_NOT_FOUND_ERROR",
+       "message": "Could not find any rides"
+      }
+      ```
 
 - `GET`:`/rides/:id` - fetches entity with specified ID
     - Params:
@@ -73,14 +81,21 @@ interface Ride {
       "driverVehicle": "Ford GT550"   
     }
     ```
-    - Error response (status code `200`)
-    ```json
-     {
-      "error_code": "SERVER_ERROR",
-      "message": "Unknown server error"
-     }
-     ```
-
+    - Errors:
+       - Server error (status code `500`)
+       ```json
+       {
+        "error_code": "SERVER_ERROR",
+        "message": "Unknown server error"
+       }
+       ```
+      - No data error (if no entity with provided ID exists) (status code `404`)
+      ```json
+      {
+       "error_code": "RIDES_NOT_FOUND_ERROR",
+       "message": "Could not find any rides"
+      }
+      ```
 - `POST`:`/rides` - saves new entity to the DB and returns it
     - Request body:
     ```json
@@ -107,11 +122,11 @@ interface Ride {
       "driverVehicle": "Ford GT550"
     }
     ```
-    - Validation error response (status code `200`)
+    - Validation error response (status code `400`)
     ```json
     {
       "error_code": "VALIDATION_ERROR",
-      "message": "Start latitude and longitude must be between -90 - 90 and -180 to 180 degrees respectively"
+      "message": "Start latitude must be between -90 and 90 degrees"
     }
     ```
     - Server error response (status code `500`) 

@@ -3,11 +3,9 @@
 const request = require('supertest');
 const {assert} = require('chai');
 
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database(':memory:');
+const db = require('../src/db/db');
 
-const app = require('../src/app')(db);
-const buildSchemas = require('../src/schemas');
+const app = require('../src/app');
 
 const TEST_DATA = {
   'new_ride': {
@@ -39,7 +37,7 @@ const TEST_DATA = {
       'value': -180,
       'response': {
         error_code: 'VALIDATION_ERROR',
-        message: 'Start latitude and longitude must be between -90 - 90 and -180 to 180 degrees respectively',
+        message: 'Start latitude must be between -90 and 90 degrees',
       },
     },
     {
@@ -47,7 +45,7 @@ const TEST_DATA = {
       'value': -180,
       'response': {
         error_code: 'VALIDATION_ERROR',
-        message: 'End latitude and longitude must be between -90 - 90 and -180 to 180 degrees respectively',
+        message: 'End latitude must be between -90 and 90 degrees',
       },
     },
     {
@@ -63,7 +61,7 @@ const TEST_DATA = {
       'value': '',
       'response': {
         error_code: 'VALIDATION_ERROR',
-        message: 'Rider name must be a non empty string',
+        message: 'Driver name must be a non empty string',
       },
     },
     {
@@ -71,7 +69,7 @@ const TEST_DATA = {
       'value': '',
       'response': {
         error_code: 'VALIDATION_ERROR',
-        message: 'Rider name must be a non empty string',
+        message: 'Vehicle name must be a non empty string',
       },
     },
   ],
@@ -79,15 +77,9 @@ const TEST_DATA = {
 
 describe('API tests', () => {
   before((done) => {
-    db.serialize((err) => {
-      if (err) {
-        return done(err);
-      }
-
-      buildSchemas(db);
-
-      return done();
-    });
+    db.init().
+        then(()=>done()).
+        catch((err)=>done(err));
   });
 
   describe('GET /health', () => {
@@ -106,7 +98,7 @@ describe('API tests', () => {
           expect((res) => {
             assert.include(res.body, TEST_DATA.rides_empty_res);
           }).
-          expect(200, done);
+          expect(404, done);
     });
   });
 
@@ -117,7 +109,7 @@ describe('API tests', () => {
           send(TEST_DATA.new_ride).
           expect('Content-Type', 'application/json; charset=utf-8').
           expect((res) => {
-            const data = res.body[0];
+            const data = res.body;
             assert.include(data, TEST_DATA.new_ride_res);
           }).
           expect(200, done);
@@ -140,7 +132,7 @@ describe('API tests', () => {
           get(`/rides/1`).
           expect('Content-Type', 'application/json; charset=utf-8').
           expect((res) => {
-            assert.include(res.body[0], TEST_DATA.new_ride_res);
+            assert.include(res.body, TEST_DATA.new_ride_res);
           }).
           expect(200, done);
     });
@@ -153,7 +145,7 @@ describe('API tests', () => {
           expect((res) => {
             assert.include(res.body, TEST_DATA.rides_empty_res);
           }).
-          expect(200, done);
+          expect(404, done);
     });
   });
 
@@ -169,7 +161,7 @@ describe('API tests', () => {
             expect((res) => {
               assert.include(res.body, testSample.response);
             }).
-            expect(200, done);
+            expect(400, done);
       });
     });
   });

@@ -1,7 +1,8 @@
 'use strict';
-const logger = require('./logger');
+const logger = require('../util/logger');
 const Promise = require('bluebird');
 const sqlite = require('sqlite3').verbose();
+const dbSchema = require('./schemas');
 
 const database = new sqlite.Database(':memory:', (/* Error */err) => {
   if (err) {
@@ -25,4 +26,6 @@ db.runAsync = (sql, args) => new Promise((resolve, reject) => {
     return resolve({sql, lastID, changes});
   });
 });
-module.exports = db;
+db.init = async ()=> await dbSchema(db);
+
+module.exports =db;
