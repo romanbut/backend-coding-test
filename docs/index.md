@@ -1,5 +1,7 @@
 # Backend coding exercise for r.but
 
+[![CircleCI](https://circleci.com/gh/romanbut/backend-coding-test/tree/master.svg?style=svg)](https://circleci.com/gh/romanbut/backend-coding-test/tree/master)
+
 ## 1. General info
 
 Simple application that allows retrieval and creation of
