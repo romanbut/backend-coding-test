@@ -10,7 +10,8 @@
     "test": "mocha tests",
     "start": "node index.js",
     "eslint": "eslint . --ext .js,.ts",
-    "coverage": "nyc --check-coverage npm run test"
+    "coverage": "nyc --check-coverage npm run test",
+    "test:load": "forever start index.js && sleep 2s && artillery run ./tests/artillery.yml -o logs/artillery.report.json && forever stop index.js"
   },
   "keywords": [
     "Xendit"

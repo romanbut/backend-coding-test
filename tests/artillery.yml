@@ -1,0 +1,87 @@
+config:
+  target: "http://localhost:8010"
+  phases:
+    - duration: 30
+      arrivalRate: 100
+  ensure:
+    p99: 50
+  variables:
+    start_lat:
+      - 40
+      - -89
+      - 12
+    start_long:
+      - 50
+      - 87
+      - -60
+    end_lat:
+      - 40
+      - 80
+      - -87
+    end_long:
+      - 50
+      - 18
+      - -89
+before:
+  flow:
+    - log: "Pre-populating test DB"
+    - loop:
+      - post:
+          url: "/rides"
+          json:
+            start_lat: "{{ start_lat }}"
+            start_long: "{{ start_long }}"
+            end_lat: "{{ end_lat }}"
+            end_long: "{{ end_long }}"
+            rider_name: "{{ $randomString() }}"
+            driver_name: "{{ $randomString() }}"
+            driver_vehicle: "{{ $randomString() }}"
+          capture:
+            - json: $.rideID
+              as: prepopulatedRideID
+      count: 100
+scenarios:
+  - name: "Healthcheck"
+    weight: 1
+    flow:
+      - get:
+          url: "/health"
+          name: "Healthcheck"
+
+  - name: "GET by ID"
+    weight: 5
+    flow:
+      - get:
+          url: "/rides/{{ prepopulatedRideID }}"
+
+  - name: "GET pages"
+    weight: 5
+    flow:
+      - get:
+          url: "/rides"
+          qs:
+            limit: "{{ $randomNumber(1,20) }}"
+            offset: "{{ $randomNumber(0,99) }}"
+
+  - name: "POST and GET by ID"
+    weight: 5
+    flow:
+      - post:
+          url: "/rides"
+          name: "POST ride"
+          json:
+            start_lat: "{{ start_lat }}"
+            start_long: "{{ start_long }}"
+            end_lat: "{{ end_lat }}"
+            end_long: "{{ end_long }}"
+            rider_name: "{{ $randomString() }}"
+            driver_name: "{{ $randomString() }}"
+            driver_vehicle: "{{ $randomString() }}"
+          capture:
+            - json: "$.rideID"
+              as: "rideID"
+      - get:
+          url: "/rides/{{ rideID }}"
+          name: "GET ride"
+
+
