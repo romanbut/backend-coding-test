@@ -8,6 +8,8 @@ Simple application that allows retrieval and creation of [`Ride`](./api/rides.md
    - `node (>8.6 and <= 10)` and `npm` are installed
 2. Installation:
    - Run `npm install` 
+3. Optional params:
+   - By default, app uses in-memory DB storage. You could change that by providing path via `DB_NAME` env variable (path must be already existing)
 
 ### 3. API details
 
@@ -22,6 +24,15 @@ To run project:
 
 To run tests:
 `npm run test`
+
+#### 4.1. Load testing
+
+- Install required dependencies:
+  - `npm i -g artillery@1.6.1` - (exact version required, since project runs on NodeJS v10, and this is the last version which _officially_ supports it)
+  - `npm i -g forever`
+
+- Run load testing script (report could be found in `logs/artillery.report.json`):
+  - `npm run test:load`
 
 ### 5. Credentials
 

@@ -3,8 +3,9 @@ const logger = require('../util/logger');
 const Promise = require('bluebird');
 const sqlite = require('sqlite3').verbose();
 const dbSchema = require('./schemas');
+const DB_NAME = process.env.DB_NAME || ':memory:';
 
-const database = new sqlite.Database(':memory:', (/* Error */err) => {
+const database = new sqlite.Database(DB_NAME, (/* Error */err) => {
   if (err) {
     logger.error(`DB init failed. Reason: ${err.message}`);
   }
@@ -27,5 +28,7 @@ db.runAsync = (sql, args) => new Promise((resolve, reject) => {
   });
 });
 db.init = async ()=> await dbSchema(db);
+db.clearDB = async ()=> await db.runAsync('DELETE FROM Rides;');
+db.destroy = async ()=> await db.runAsync('DROP TABLE IF EXISTS Rides;');
 
 module.exports =db;
