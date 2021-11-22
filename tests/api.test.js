@@ -9,15 +9,15 @@ const app = require('../src/app');
 
 const TEST_DATA = {
   'generateRandomString': (length) => Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, length),
-  'generateNewRideRequest': function() {
+  'generateNewRideRequest': function(length=8) {
     return {
       'start_lat': _.random(-89, 89),
       'start_long': _.random(-179, 179),
       'end_lat': _.random(-89, 89),
       'end_long': _.random(-179, 179),
-      'rider_name': this.generateRandomString(8),
-      'driver_name': this.generateRandomString(8),
-      'driver_vehicle': this.generateRandomString(8),
+      'rider_name': this.generateRandomString(length),
+      'driver_name': this.generateRandomString(length),
+      'driver_vehicle': this.generateRandomString(length),
     };
   },
   'convertRequestedToResponse': (data) => {
