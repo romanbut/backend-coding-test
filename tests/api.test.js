@@ -2,43 +2,38 @@
 
 const request = require('supertest');
 const {assert} = require('chai');
-
+const _ = require('lodash');
 const db = require('../src/db/db');
 const ridesService = require('../src/services/rides');
 const app = require('../src/app');
 
 const TEST_DATA = {
-  'new_ride': {
-    'start_lat': 40,
-    'start_long': 50,
-    'end_lat': 40,
-    'end_long': 50,
-    'rider_name': 'John rider',
-    'driver_name': 'Michel Knight',
-    'driver_vehicle': 'Ford GT550',
+  'generateRandomString': (length) => Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, length),
+  'generateNewRideRequest': function() {
+    return {
+      'start_lat': _.random(-89, 89),
+      'start_long': _.random(-179, 179),
+      'end_lat': _.random(-89, 89),
+      'end_long': _.random(-179, 179),
+      'rider_name': this.generateRandomString(8),
+      'driver_name': this.generateRandomString(8),
+      'driver_vehicle': this.generateRandomString(8),
+    };
   },
-  'new_ride_res': {
-    'rideID': 1,
-    'startLat': 40,
-    'startLong': 50,
-    'endLat': 40,
-    'endLong': 50,
-    'riderName': 'John rider',
-    'driverName': 'Michel Knight',
-    'driverVehicle': 'Ford GT550',
+  'convertRequestedToResponse': (data) => {
+    return {
+      'startLat': data['start_lat'],
+      'startLong': data['start_long'],
+      'endLat': data['end_lat'],
+      'endLong': data['end_long'],
+      'riderName': data['rider_name'],
+      'driverName': data['driver_name'],
+      'driverVehicle': data['driver_vehicle'],
+    };
   },
-  'rides_empty_res': {
+  'noRidesResponse': {
     'error_code': 'RIDES_NOT_FOUND_ERROR',
     'message': 'Could not find any rides',
-  },
-  'rides_sql_inj': {
-    'start_lat': 40,
-    'start_long': 50,
-    'end_lat': 40,
-    'end_long': 50,
-    'rider_name': ';DROP TABLE Rides;--',
-    'driver_name': '\';DROP TABLE Rides;--',
-    'driver_vehicle': '";DROP TABLE Rides;--',
   },
   'validation': [
     {
@@ -82,7 +77,7 @@ const TEST_DATA = {
       },
     },
   ],
-  'injection_ids': [
+  'injectionStrings': [
     '\';DROP TABLE Rides;--',
     '1\';DROP TABLE Rides;--',
     '";DROP TABLE Rides;--',
@@ -93,13 +88,13 @@ const TEST_DATA = {
 };
 
 describe('API tests', () => {
-  before((done) => {
+  beforeEach((done) => {
     db.init().
         then(() => done()).
         catch((err) => done(err));
   });
-  after((done) => {
-    db.runAsync('DROP TABLE Rides;').
+  afterEach((done) => {
+    db.destroy().
         then(() => done()).
         catch(done);
   });
@@ -109,6 +104,7 @@ describe('API tests', () => {
       request(app).
           get('/health').
           expect('Content-Type', /text/).
+          expect((res) => assert.equal(res.text, 'Healthy')).
           expect(200, done);
     });
   });
@@ -117,65 +113,48 @@ describe('API tests', () => {
       request(app).
           get('/rides').
           expect('Content-Type', 'application/json; charset=utf-8').
-          expect((res) => {
-            assert.include(res.body, TEST_DATA.rides_empty_res);
-          }).
+          expect((res) => assert.include(res.body, TEST_DATA.noRidesResponse)).
           expect(404, done);
+    });
+    it('should return list with one entity', (done) => {
+      let saved = {};
+      const generated = TEST_DATA.generateNewRideRequest();
+      request(app).
+          post('/rides').
+          send(generated).
+          expect('Content-Type', 'application/json; charset=utf-8').
+          expect((res) => {
+            assert.include(res.body, {...TEST_DATA.convertRequestedToResponse(generated)});
+            saved = res.body;
+          }).
+          expect(200).
+          end(() => {
+            request(app).
+                get('/rides').
+                expect('Content-Type', 'application/json; charset=utf-8').
+                expect((res) => {
+                  assert.include(res.body[0], saved);
+                  assert.equal(res.body.length, 1);
+                }).
+                expect(200, done);
+          });
     });
   });
 
   describe('POST /rides', () => {
     it('should return inserted entity', (done) => {
+      const generated = TEST_DATA.generateNewRideRequest();
       request(app).
           post('/rides').
-          send(TEST_DATA.new_ride).
+          send(generated).
           expect('Content-Type', 'application/json; charset=utf-8').
-          expect((res) => {
-            const data = res.body;
-            assert.include(data, TEST_DATA.new_ride_res);
-          }).
+          expect((res) => assert.include(res.body, {...TEST_DATA.convertRequestedToResponse(generated)})).
           expect(200, done);
     });
-  });
-  describe('GET /rides', () => {
-    it('should return list with one entity', (done) => {
-      request(app).
-          get('/rides').
-          expect('Content-Type', 'application/json; charset=utf-8').
-          expect((res) => {
-            assert.include(res.body[0], TEST_DATA.new_ride_res);
-          }).
-          expect(200, done);
-    });
-  });
-  describe('GET /rides/:id', () => {
-    it('should return entity by ID', (done) => {
-      request(app).
-          get(`/rides/1`).
-          expect('Content-Type', 'application/json; charset=utf-8').
-          expect((res) => {
-            assert.include(res.body, TEST_DATA.new_ride_res);
-          }).
-          expect(200, done);
-    });
-  });
-  describe('GET /rides/:id', () => {
-    it('should return error', (done) => {
-      request(app).
-          get(`/rides/100500`).
-          expect('Content-Type', 'application/json; charset=utf-8').
-          expect((res) => {
-            assert.include(res.body, TEST_DATA.rides_empty_res);
-          }).
-          expect(404, done);
-    });
-  });
-
-  TEST_DATA.validation.forEach((testSample) => {
-    const testData = Object.assign({}, TEST_DATA.new_ride);
-    testData[testSample.field] = testSample.value;
-    describe('POST /rides validation', () => {
-      it('should return validation error', (done) => {
+    TEST_DATA.validation.forEach((testSample) => {
+      it(`should fail validation because of [${testSample.field}]`, (done) => {
+        const testData = Object.assign({}, TEST_DATA.generateNewRideRequest());
+        testData[testSample.field] = testSample.value;
         request(app).
             post('/rides').
             send(testData).
@@ -186,43 +165,96 @@ describe('API tests', () => {
             expect(400, done);
       });
     });
+    it('should return error because of empty body', (done) => {
+      request(app).
+          post('/rides').
+          expect('Content-Type', 'application/json; charset=utf-8').
+          expect((res) => assert.include(res.body, TEST_DATA.validation[0].response)).
+          expect(400, done);
+    });
+  });
+
+  describe('GET /rides/:id', () => {
+    it('should return entity by ID', (done) => {
+      let saved = {};
+      const generated = TEST_DATA.generateNewRideRequest();
+      request(app).
+          post('/rides').
+          send(generated).
+          expect('Content-Type', 'application/json; charset=utf-8').
+          expect((res) => {
+            assert.include(res.body, {...TEST_DATA.convertRequestedToResponse(generated)});
+            saved = res.body;
+          }).
+          expect(200).
+          end(() => {
+            request(app).
+                get(`/rides/${saved.rideID}`).
+                expect('Content-Type', 'application/json; charset=utf-8').
+                expect((res) => assert.include(res.body, saved)).
+                expect(200, done);
+          });
+    });
+    it('should return error', (done) => {
+      request(app).
+          get(`/rides/100500`).
+          expect('Content-Type', 'application/json; charset=utf-8').
+          expect((res) => {
+            assert.include(res.body, TEST_DATA.noRidesResponse);
+          }).
+          expect(404, done);
+    });
   });
 });
 
 describe('Security tests', () => {
-  before((done) => {
+  beforeEach((done) => {
     db.init().
-        then(() => ridesService.saveNew(TEST_DATA.new_ride)).
+        then(() => ridesService.saveNew(TEST_DATA.generateNewRideRequest())).
         then(() => done()).
-        catch((err) => done(err));
+        catch(done);
+  });
+  afterEach((done) => {
+    db.destroy().
+        then(() => done()).
+        catch(done);
   });
 
   describe('GET /rides injection test', () => {
-    TEST_DATA.injection_ids.forEach((injectionId) => {
+    TEST_DATA.injectionStrings.forEach((injectionId) => {
       it('should throw an error', (done) => {
         request(app).
             get(`/rides/${injectionId}`).
-            expect((res) => assert.include(res.body, TEST_DATA.rides_empty_res)).
-            expect(404, done);
+            expect((res) => assert.include(res.body, TEST_DATA.noRidesResponse)).
+            expect(404).
+            end(() => {
+              request(app).
+                  get('/rides').
+                  expect('Content-Type', 'application/json; charset=utf-8').
+                  expect((res) => assert.equal(res.body.length, 1)).
+                  expect(200, done);
+            });
       });
-    });
-
-    it('Should check that DB still exists and contains data', (done) => {
-      ridesService.getAll(0, 10).then((records) => assert.equal(records.length, 1)).then(done);
     });
   });
   describe('POST /rides', () => {
-    it('should save entity and return it', (done) => {
-      request(app).
-          post('/rides').
-          send(TEST_DATA.rides_sql_inj).
-          expect((res) => {
-            assert.include(res.body, {rideID: 2});
-          }).
-          expect(200, done);
-    });
-    it('Should check that DB still exists and contains data', (done) => {
-      ridesService.getAll(0, 10).then((records) => assert.equal(records.length, 2)).then(done);
+    TEST_DATA.injectionStrings.forEach((injectionString) => {
+      it('should save entity and return it', (done) => {
+        const injection = {driver_name: injectionString, vehicle_name: injectionString, rider_name: injectionString};
+        const data = Object.assign({}, TEST_DATA.generateNewRideRequest(), injection);
+        request(app).
+            post('/rides').
+            send(data).
+            expect((res) => assert.include(res.body, {...TEST_DATA.convertRequestedToResponse(data)})).
+            expect(200).
+            end(() => {
+              request(app).
+                  get('/rides').
+                  expect('Content-Type', 'application/json; charset=utf-8').
+                  expect((res) => assert.equal(res.body.length, 2)).
+                  expect(200, done);
+            });
+      });
     });
   });
 });
