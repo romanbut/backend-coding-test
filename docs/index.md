@@ -1,6 +1,6 @@
 # Backend coding exercise for r.but
 
-[![CircleCI](https://circleci.com/gh/romanbut/backend-coding-test/tree/master.svg?style=svg)](https://circleci.com/gh/romanbut/backend-coding-test/tree/master)
+[![CircleCI](https://circleci.com/gh/romanbut/backend-coding-test/tree/master.svg?style=svg&circle-token=a55e6e9adbb81fbcc2206b7ea091a6d9b017bb39)](https://circleci.com/gh/romanbut/backend-coding-test/tree/master)
 
 ## 1. General info
 
