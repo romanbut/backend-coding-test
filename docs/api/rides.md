@@ -9,13 +9,13 @@ Set of endpoints for working with `Ride` entity
 ```typescript
 interface Ride {
     "rideID": number, //PRIMARY KEY AUTOINCREMENT
-    "start_lat": number, //NOT NULL (>= 0; <= 90)
-    "start_long": number, //NOT NULL (>= 0; <= 180)
-    "end_lat": number, //NOT NULL (>= 0; <= 90)
-    "end_long": number, //NOT NULL (>= 0; <= 180)
-    "rider_name": string, //NOT NULL
-    "driver_name": string, //NOT NULL
-    "driver_vehicle": string, //NOT NULL
+    "startLat": number, //NOT NULL (>= 0; <= 90)
+    "startLong": number, //NOT NULL (>= 0; <= 180)
+    "endLat": number, //NOT NULL (>= 0; <= 90)
+    "endLong": number, //NOT NULL (>= 0; <= 180)
+    "riderName": string, //NOT NULL
+    "driverName": string, //NOT NULL
+    "driverVehicle": string, //NOT NULL
     "created": number //DATETIME
 }
 ```
