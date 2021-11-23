@@ -5,7 +5,7 @@
 ## 1. General info
 
 Simple application that allows retrieval and creation of
-[`Ride`](./api/rides.md#Scheme) entity  
+[`Ride`](api/rides.md#Scheme) entity  
 
 ## 2. Technical specifications
 
@@ -21,9 +21,9 @@ Simple application that allows retrieval and creation of
 
 ## 3. API details
 
-- [Rides](./api/rides.md)
+- [Rides](api/rides.md)
 
-- [Util](./api/utils.md)
+- [Util](api/utils.md)
 
 ## 4. Scripts
 
@@ -43,6 +43,16 @@ To run tests:
 
 - Run load testing script (report could be found in `logs/artillery.report.json`):
   - `npm run test:load`
+
+### 4.2 Swagger documentation
+
+API documentation could be accessed by running script
+
+`npm run docs`
+
+After that docs should be accessible via `http://localhost:8020/`.
+
+_Important note:_ to run interactive examples, main server should be launched first.
 
 ## 5. Credentials
 
